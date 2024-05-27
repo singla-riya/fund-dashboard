@@ -1,19 +1,14 @@
 import pandas as pd
 import numpy as np
-import os
-import locale
-import streamlit as st 
-import plotly.express as px 
+import streamlit as st
+import plotly.express as px
 import warnings
 
 warnings.filterwarnings('ignore')
-locale.setlocale(locale.LC_ALL, 'en_IN.UTF-8')
 
-st.set_page_config(page_title ="report", page_icon=":bar_chart:", layout="wide")
-# st.image(r"C:\Users\sunshine\Desktop\project\kalgidhartrustandsocietylogo.gif", use_column_width=True)
+st.set_page_config(page_title="report", page_icon=":bar_chart:", layout="wide")
 
-#authentication part 
-
+# Authentication part
 valid_users = {
     "riya": "singla12",
     "harmeet singh": "hsingh00",
@@ -47,36 +42,23 @@ def authenticate_user():
             st.text_input(label="Username:", value="", key="user", on_change=creds_entered)
             st.text_input(label="Password:", value="", key="passwd", type="password", on_change=creds_entered)
             return False
-            
 
 if authenticate_user():
+    st.title(" :bar_chart: Fundraising Dashboard")
+    st.markdown('<style>div.block-container{padding-top:1rem;}</style>', unsafe_allow_html=True)
 
+    # File upload functionality
+    fl = st.file_uploader(":file_folder: Upload a file", type=(["xlsx", "xls"]))
 
-        # dashboard code
-        st.title(" :bar_chart: Fundraising Dashboard")
-        st.markdown('<style>div.block-container{padding-top:1rem;}</style>',unsafe_allow_html=True )
+    # Check if a file is uploaded
+    if fl is not None:
+        filename = fl.name
+        st.write("Uploaded file:", filename)
+        df = pd.read_excel(fl)  # Read the uploaded file directly
+    else:
+        st.error("Please upload a file first.")
 
-        # st.markdown('<style>.block-container {display: flex; justify-content: center; align-items: center; height: 100vh;}</style>', unsafe_allow_html=True)
-        # Define the folder path where the default file is located
-        default_folder_path = r"C:\Users\sunshine\Desktop\project"
-        default_filename = "output.xlsx"
-
-        # File upload functionality
-        fl = st.file_uploader(":file_folder: Upload a file", type=(["xlsx", "xls"]))
-
-        # Check if a file is uploaded
-        if fl is not None:
-            filename = fl.name
-            st.write("Uploaded file:", filename)
-            df = pd.read_excel(fl)  # Read the uploaded file directly
-        else:
-            # Check if the default file exists in the specified folder
-            if os.path.exists(os.path.join(default_folder_path, default_filename)):
-                st.write("Using default file:", default_filename)
-                df = pd.read_excel(os.path.join(default_folder_path, default_filename))
-            else:
-                st.error("Default file not found. Please upload a file first.")
-                        
+    if 'df' in locals():
         # Extract start and end dates from "Report Period" column
         df[['Start Date', 'End Date']] = df['Report Period'].str.split(' To ', expand=True)
 
@@ -97,22 +79,20 @@ if authenticate_user():
         # Filter the DataFrame based on the selected date range
         df = df[(df['Start Date'] >= date1) & (df['End Date'] <= date2)]
         st.sidebar.header("Choose Your Filter: ")
-        Area = st.sidebar.multiselect("Pick your Area",df["Area"].unique())
+        Area = st.sidebar.multiselect("Pick your Area", df["Area"].unique())
         if not Area:
             df2 = df.copy()
         else:
             df2 = df[df["Area"].isin(Area)]
 
-        #Create for the Payment_Mode
-        # st.sidebar.header("Choose Your Filter: ")
-        Payment_Mode = st.sidebar.multiselect("Pick your Payment_Mode",df["Payment_Mode"].unique())
-        if not Area:
+        # Create for the Payment_Mode
+        Payment_Mode = st.sidebar.multiselect("Pick your Payment_Mode", df["Payment_Mode"].unique())
+        if not Payment_Mode:
             df3 = df2.copy()
         else:
-            df3 = df2[df2["Area"].isin(Payment_Mode)]
+            df3 = df2[df2["Payment_Mode"].isin(Payment_Mode)]
 
-        #run the data based on Area and payment_Mode
-
+        # Run the data based on Area and Payment_Mode
         if not Area and not Payment_Mode:
             filtered_df = df
         elif Area and not Payment_Mode:
@@ -122,26 +102,22 @@ if authenticate_user():
         else:
             filtered_df = df2[df2["Area"].isin(Area) & df2["Payment_Mode"].isin(Payment_Mode)]
 
-        # filtered_df['Total Amount'] = filtered_df.apply(lambda row: row['Membership_total'] + row['Child_Sponsorship'] + row['CSR'], axis=1)
-        integer_columns = filtered_df.select_dtypes(include=[np.int64, np.float64])
-
         # Sum the selected integer columns row-wise
+        integer_columns = filtered_df.select_dtypes(include=[np.int64, np.float64])
         filtered_df['Total Amount'] = integer_columns.sum(axis=1)
-        # print(filtered_df)
+
         with col1:
             st.subheader("Total Amount by Area ")
-            fig = px.pie(filtered_df, values="Total Amount", names="Area", hole = 0.5)
-            fig.update_traces(text = filtered_df["Area"], textposition = "inside")
+            fig = px.pie(filtered_df, values="Total Amount", names="Area", hole=0.5)
+            fig.update_traces(text=filtered_df["Area"], textposition="inside")
             st.plotly_chart(fig, use_container_width=True)
         with col2:
             st.subheader("Total Payment by Payment Mode")
             fig = px.pie(filtered_df, values="Total Amount", names="Payment_Mode")
-            fig.update_traces(textposition = "inside")
+            fig.update_traces(textposition="inside")
             st.plotly_chart(fig, use_container_width=True)
 
         # Display the KPI
-        # st.sidebar.subheader("Total Amount (INR)")
-        # st.sidebar.write(total_amount_inr)
         kpi_style = """
             background-color: #074173;
             padding: 10px;
@@ -149,19 +125,19 @@ if authenticate_user():
             border-radius: 10px;
             color: white;
             text-align: center;
-            """
+        """
 
         total_amount = filtered_df['Total Amount'].sum()
-        total_amount_inr = locale.currency(total_amount, symbol=True, grouping=True)
+        total_amount_inr = f"₹{total_amount:,.2f}"
 
         Total_Membership_Amount = filtered_df['Membership_total'].sum()
-        total_Membership = locale.currency(Total_Membership_Amount, symbol=True, grouping=True)
+        total_Membership = f"₹{Total_Membership_Amount:,.2f}"
 
         Total_ChildSponsor_Amount = filtered_df['Child_Sponsorship'].sum()
-        total_sponsorship = locale.currency(Total_ChildSponsor_Amount, symbol=True, grouping=True)
+        total_sponsorship = f"₹{Total_ChildSponsor_Amount:,.2f}"
 
         Total_CSR_Amount = filtered_df['CSR'].sum()
-        total_csr = locale.currency(Total_CSR_Amount, symbol=True, grouping=True)
+        total_csr = f"₹{Total_CSR_Amount:,.2f}"
 
         # KPI HTML CODE
         kpi_html = f'''
@@ -179,19 +155,13 @@ if authenticate_user():
             {total_csr}
             <br><br>
             </div>
-            '''
+        '''
 
         # Display the HTML in the sidebar
         st.sidebar.markdown(kpi_html, unsafe_allow_html=True)
 
-
-        # create a treemap based on different Areas
-
-        st.subheader("Amount Recieved by Different Sewa Plans Across Areas")
-        # fig2 = px.treemap(filtered_df, path=["Area","Membership_total","Child_Sponsorship","CSR"], values = "Total Amount", hover_data= ["Total Amount"], color="Area")
-
-        # fig2.update_layout(width = 800, height= 650)
-        # st.plotly_chart(fig2, use_container_width=True)
+        # Create a treemap based on different Areas
+        st.subheader("Amount Received by Different Sewa Plans Across Areas")
 
         df_selected = df[['Area', 'Membership_total', 'Child_Sponsorship', 'CSR']]
 
@@ -204,25 +174,9 @@ if authenticate_user():
         # Drop rows with NaN values in the 'Amount' column
         melted_df = melted_df.dropna(subset=['Amount'])
 
-        # # Create the treemap
-        melted_df['Area_Category'] = melted_df['Area'] + ' - ' + melted_df['Category']
-
-#tree map created
+        # Create the treemap
         fig2 = px.treemap(melted_df, path=['Area', 'Category'], values='Amount', color='Category',
-                        color_discrete_map={'Membership_total': '#29b09d','CSR':'#ffd16a','Child_Sponsorship':'#83c9ff'})
+                        color_discrete_map={'Membership_total': '#29b09d', 'CSR': '#ffd16a', 'Child_Sponsorship': '#83c9ff'})
 
         fig2.update_layout(width=800, height=650)
         st.plotly_chart(fig2, use_container_width=True)
-        import plotly.figure_factory as ff 
-
-                        # create table chart
-                        # st.subheader(":point_right: Amount Recieved by Different Sewa Plans Across Areas")
-                        # with st.expander("Total Amount by Area"):
-                        #     # Group the DataFrame by 'Area' and calculate the sum of each category
-                        #     total_amount_by_area = df.groupby('Area').agg({'Membership_total': 'sum', 
-                        #                                                     'Child_Sponsorship': 'sum', 
-                        #                                                     'CSR': 'sum'}).reset_index()
-
-                        #     # Create a table with total amount by area and category
-                        #     fig = ff.create_table(total_amount_by_area, colorscale="Cividis")
-                    #     st.plotly_chart(fig, use_container_width=True)
