@@ -3,6 +3,7 @@ import numpy as np
 import streamlit as st
 import plotly.express as px
 import warnings
+from babel.numbers import format_currency
 
 warnings.filterwarnings('ignore')
 
@@ -128,16 +129,16 @@ if authenticate_user():
         """
 
         total_amount = filtered_df['Total Amount'].sum()
-        total_amount_inr = f"₹{total_amount:,.2f}"
+        total_amount_inr = format_currency(total_amount, 'INR', locale='en_IN')
 
         Total_Membership_Amount = filtered_df['Membership_total'].sum()
-        total_Membership = f"₹{Total_Membership_Amount:,.2f}"
+        total_Membership = format_currency(Total_Membership_Amount, 'INR', locale='en_IN')
 
         Total_ChildSponsor_Amount = filtered_df['Child_Sponsorship'].sum()
-        total_sponsorship = f"₹{Total_ChildSponsor_Amount:,.2f}"
+        total_sponsorship = format_currency(Total_ChildSponsor_Amount, 'INR', locale='en_IN')
 
         Total_CSR_Amount = filtered_df['CSR'].sum()
-        total_csr = f"₹{Total_CSR_Amount:,.2f}"
+        total_csr = format_currency(Total_CSR_Amount, 'INR', locale='en_IN')
 
         # KPI HTML CODE
         kpi_html = f'''
